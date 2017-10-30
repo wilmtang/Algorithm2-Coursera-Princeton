@@ -6,7 +6,6 @@ import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.Queue;
 
-@SuppressWarnings("ALL")
 public class SAP {
 
     private Digraph graph;
@@ -109,6 +108,9 @@ public class SAP {
         int[] res = new int[]{Integer.MAX_VALUE, -1};
         int remainingSteps = -1;
         while ((!queue1.isEmpty() || !queue2.isEmpty()) && (remainingSteps == -1 || remainingSteps > 0)) {
+            if (remainingSteps > 0) {
+                remainingSteps--;
+            }
             // find adj of q1 elements.
             Queue<Integer> tmpQ1 = new LinkedList<>();
             while (!queue1.isEmpty()) {
@@ -137,7 +139,7 @@ public class SAP {
             while (!queue2.isEmpty()) {
                 int node = queue2.poll();
                 if (map1.containsKey(node)) {
-                    int newLength = map1.get(node) + depth1;
+                    int newLength = map1.get(node) + depth2;
                     if (newLength < res[0]) {
                         res[0] = newLength;
                         res[1] = node;
@@ -154,10 +156,6 @@ public class SAP {
             }
             queue2 = tmpQ2;
             depth2++;
-
-            if (remainingSteps > 0) {
-                remainingSteps--;
-            }
         }
         if (res[0] == Integer.MAX_VALUE) {
             return new int[]{-1, -1};
@@ -169,12 +167,12 @@ public class SAP {
 
     // do unit testing of this class
     public static void main(String[] args) {
-        String s = "./wordnet/digraph3.txt";
+        String s = "./wordnet/digraph-wordnet.txt";
         In in = new In(s);
         Digraph G = new Digraph(in);
         SAP sap = new SAP(G);
-        int v = 10;
-        int w = 7;
+        int v = 45011;
+        int w = 39909;
 
         int length = sap.length(v, w);
         int ancestor = sap.ancestor(v, w);

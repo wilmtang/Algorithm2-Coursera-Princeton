@@ -17,7 +17,7 @@ public class WordNet {
         }
 
         In in = new In(synsets);
-        String str = null;
+        String str;
 
         int V = 0;
         while ((str = in.readLine()) != null) {
@@ -26,8 +26,8 @@ public class WordNet {
             String[] synset = tok[1].split(" ");
             int id = Integer.parseInt(tok[0]);
             for (String s : synset) {
-                word2id.computeIfAbsent(s, ignored -> new ArrayList<Integer>()).add(id);
-                id2word.computeIfAbsent(id, ignored -> new ArrayList<String>()).add(s);
+                word2id.computeIfAbsent(s, ignored -> new ArrayList<>()).add(id);
+                id2word.computeIfAbsent(id, ignored -> new ArrayList<>()).add(s);
             }
         }
         in.close();
