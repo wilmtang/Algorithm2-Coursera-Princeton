@@ -218,5 +218,20 @@ public class SAP {
         }
         System.out.println();
 
+        // my trick test
+        s = "./wordnet/myTrickyTest";
+        in = new In(s);
+        G = new Digraph(in);
+        sap = new SAP(G);
+        ArrayList<Integer> va = new ArrayList<>();
+        va.add(0);
+        va.add(11);
+        ArrayList<Integer> wa = new ArrayList<>();
+        wa.add(7);
+        wa.add(17);
+        length = sap.length(va, wa);
+        ancestor = sap.ancestor(va, wa);
+        StdOut.printf("length = %d, ancestor = %d\n", length, ancestor);
+
     }
 }
