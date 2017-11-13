@@ -2,12 +2,13 @@ import edu.princeton.cs.algs4.Picture;
 
 import java.awt.Color;
 
-
 public class SeamCarver {
     private static final int BORDER_ENERGY = 1000;
+    private static final boolean HORIZONTAL = false;
+    private static final boolean VERTICAL = true;
+
+
     private Color[][] colorsMatrix;
-    private double[][] energyMatrix;
-    private double[][] energyMatrixT; // transposed energyMatrix
     private int height, width;
 
     private Picture picture;
@@ -28,7 +29,6 @@ public class SeamCarver {
                 colorsMatrix[row][col] = picture.get(col, row);
             }
         }
-        getEnergyMatrix();
     }
 
     // current picture
@@ -53,44 +53,39 @@ public class SeamCarver {
     }
 
     // energy of pixel at column x and row y
-    public double energy(int x, int y) {
-        if (x < 0 || x >= width || y < 0 || y >= height) {
+    public double energy(int col, int row) {
+        if (col < 0 || col >= width || row < 0 || row >= height) {
             throw new java.lang.IllegalArgumentException();
         }
 
-        return energyMatrix[y][x];
-    }
-
-    private void getEnergyMatrix() {
-        energyMatrix = new double[height][width];
-
-        for (int row = 0; row < height; row++) {
-            for (int col = 0; col < width; col++) {
-                if (row == 0 || col == 0 || row == height - 1 || col == width - 1) {
-                    energyMatrix[row][col] = BORDER_ENERGY;
-                    continue;
-                }
-                Color l = colorsMatrix[row][col - 1];
-                Color r = colorsMatrix[row][col + 1];
-                double deltaX2 = colorSquareDiff(l, r);
-
-                Color u = colorsMatrix[row - 1][col];
-                Color d = colorsMatrix[row + 1][col];
-                double deltaY2 = colorSquareDiff(u, d);
-                energyMatrix[row][col] = Math.sqrt(deltaX2 + deltaY2);
-            }
+        if (row == 0 || col == 0 || row == height - 1 || col == width - 1) {
+            return BORDER_ENERGY;
         }
-        getEnergyTransposed();
+
+        Color l = colorsMatrix[row][col - 1];
+        Color r = colorsMatrix[row][col + 1];
+        double deltaX2 = colorSquareDiff(l, r);
+
+        Color u = colorsMatrix[row - 1][col];
+        Color d = colorsMatrix[row + 1][col];
+        double deltaY2 = colorSquareDiff(u, d);
+
+        return Math.sqrt(deltaX2 + deltaY2);
     }
 
-    private void getEnergyTransposed() {
-        energyMatrixT = new double[width][height];
-        for (int i = 0; i < width; i++) {
-            for (int j = 0; j < height; j++) {
-                energyMatrixT[i][j] = energyMatrix[j][i];
-            }
+
+    private double getEnergy(int row, int col, boolean isVertical) {
+        if (isVertical) {
+            return energy(col, row);
+        } else {
+            return energy(row, col);
         }
     }
+
+    // for to get energy for transposed energyMatrix
+    // private double getEnergyT(int row, int col) {
+    //     return energy(row, col);
+    // }
 
     private double colorSquareDiff(Color c1, Color c2) {
 
@@ -106,18 +101,17 @@ public class SeamCarver {
 
     // sequence of indices for horizontal seam
     public int[] findHorizontalSeam() {
-        return findSeam(energyMatrixT, false);
+        return findSeam(HORIZONTAL);
     }
-
 
     // sequence of indices for vertical seam
     // using topological sort to find shortest path
     public int[] findVerticalSeam() {
-        return findSeam(energyMatrix, true);
+        return findSeam(VERTICAL);
     }
 
     // using topological sort to find shortest path
-    private int[] findSeam(double[][] energyMatrix, boolean isVertical) {
+    private int[] findSeam(boolean isVertical) {
         int columns, rows;
 
         if (isVertical) {
@@ -138,14 +132,14 @@ public class SeamCarver {
             for (int j = 0; j < columns; j++) {
                 // first line
                 if (i == 0) {
-                    distTo[j] = energyMatrix[i][j];
+                    distTo[j] = getEnergy(i, j, isVertical);
                     parent[i][j] = -1;
                     continue;
                 }
 
                 // deal with special case: only one line of pixel:
                 if (columns == 1) {
-                    distTo[j] = prevDistTo[j] + energyMatrix[i][j];
+                    distTo[j] = prevDistTo[j] + getEnergy(i, j, isVertical);
                     parent[i][j] = j;
                     continue;
                 }
@@ -162,10 +156,10 @@ public class SeamCarver {
                 if (theOther != -1) {
                     if (prevDistTo[j] < prevDistTo[theOther]) {
                         parent[i][j] = j;
-                        distTo[j] = prevDistTo[j] + energyMatrix[i][j];
+                        distTo[j] = prevDistTo[j] + getEnergy(i, j, isVertical);
                     } else {
                         parent[i][j] = theOther;
-                        distTo[j] = prevDistTo[theOther] + energyMatrix[i][j];
+                        distTo[j] = prevDistTo[theOther] + getEnergy(i, j, isVertical);
                     }
                     continue;
                 }
@@ -175,11 +169,10 @@ public class SeamCarver {
                 for (int k = j - 1; k <= j + 1; k++) {
                     if (prevDistTo[k] < minValue) {
                         minValue = prevDistTo[k];
-                        distTo[j] = prevDistTo[k] + energyMatrix[i][j];
                         parent[i][j] = k;
                     }
                 }
-                distTo[j] = minValue + energyMatrix[i][j];
+                distTo[j] = minValue + getEnergy(i, j, isVertical);
             }
             double[] tmp = prevDistTo;
             prevDistTo = distTo;
@@ -212,19 +205,17 @@ public class SeamCarver {
 
     // remove vertical seam from current picture
     public void removeVerticalSeam(int[] seam) {
-        checkSeam(seam, true);
+        checkSeam(seam, VERTICAL);
 
         for (int i = 0; i < height; i++) {
             System.arraycopy(colorsMatrix[i], seam[i] + 1, colorsMatrix[i], seam[i], width - seam[i] - 1);
         }
         width--;
-
-        getEnergyMatrix();
     }
 
     // remove horizontal seam from current picture
     public void removeHorizontalSeam(int[] seam) {
-        checkSeam(seam, false);
+        checkSeam(seam, HORIZONTAL);
 
         for (int col = 0; col < width; col++) {
             for (int row = seam[col]; row < height - 1; row++) {
@@ -232,8 +223,6 @@ public class SeamCarver {
             }
         }
         height--;
-
-        getEnergyMatrix();
     }
 
     private void checkSeam(int[] seam, boolean isVertical) {
