@@ -7,18 +7,17 @@ public class SeamCarver {
     private static final boolean HORIZONTAL = false;
     private static final boolean VERTICAL = true;
 
-
+    // for full marks, need to use one single int to represent color to satisfy space requirement.
+    // may refer to https://github.com/Ramin8or/algorithms/blob/4f92b7032ce61137041fe5807bc553ac38468ef8/7_seam_carver/SeamCarver.java
+    // private int[][] pixels; // Alpha and RGB values packed in integers
     private Color[][] colorsMatrix;
     private int height, width;
-
-    private Picture picture;
 
     // create a seam carver object based on the given picture
     public SeamCarver(Picture picture) {
         if (picture == null) {
             throw new java.lang.IllegalArgumentException();
         }
-        this.picture = picture;
 
         height = picture.height();
         width = picture.width();
@@ -33,7 +32,7 @@ public class SeamCarver {
 
     // current picture
     public Picture picture() {
-        picture = new Picture(width, height);
+        Picture picture = new Picture(width, height);
         for (int col = 0; col < width; col++) {
             for (int row = 0; row < height; row++) {
                 picture.set(col, row, colorsMatrix[row][col]);
@@ -207,9 +206,13 @@ public class SeamCarver {
     public void removeVerticalSeam(int[] seam) {
         checkSeam(seam, VERTICAL);
 
+        Color[][] newColors = new Color[height][width - 1];
         for (int i = 0; i < height; i++) {
-            System.arraycopy(colorsMatrix[i], seam[i] + 1, colorsMatrix[i], seam[i], width - seam[i] - 1);
+            // System.arraycopy(colorsMatrix[i], seam[i] + 1, colorsMatrix[i], seam[i], width - seam[i] - 1);
+            System.arraycopy(colorsMatrix[i], 0, newColors[i], 0, seam[i]);
+            System.arraycopy(colorsMatrix[i], seam[i] + 1, newColors[i], seam[i], width - seam[i] - 1);
         }
+        colorsMatrix = newColors;
         width--;
     }
 
@@ -217,11 +220,17 @@ public class SeamCarver {
     public void removeHorizontalSeam(int[] seam) {
         checkSeam(seam, HORIZONTAL);
 
+        Color[][] newColors = new Color[height - 1][width];
         for (int col = 0; col < width; col++) {
-            for (int row = seam[col]; row < height - 1; row++) {
-                colorsMatrix[row][col] = colorsMatrix[row + 1][col];
+            for (int row = 0; row < height - 1; row++) {
+                if (row < seam[col]) {
+                    newColors[row][col] = colorsMatrix[row][col];
+                } else {
+                    newColors[row][col] = colorsMatrix[row + 1][col];
+                }
             }
         }
+        colorsMatrix = newColors;
         height--;
     }
 
