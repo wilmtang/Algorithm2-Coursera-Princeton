@@ -11,7 +11,6 @@ public class SeamCarver {
     private int height, width;
 
     private Picture picture;
-    private boolean isPicObsolete = false;
 
     // create a seam carver object based on the given picture
     public SeamCarver(Picture picture) {
@@ -34,14 +33,11 @@ public class SeamCarver {
 
     // current picture
     public Picture picture() {
-        if (isPicObsolete) {
-            picture = new Picture(width, height);
-            for (int col = 0; col < width; col++) {
-                for (int row = 0; row < height; row++) {
-                    picture.set(col, row, colorsMatrix[row][col]);
-                }
+        picture = new Picture(width, height);
+        for (int col = 0; col < width; col++) {
+            for (int row = 0; row < height; row++) {
+                picture.set(col, row, colorsMatrix[row][col]);
             }
-            isPicObsolete = false;
         }
         return picture;
     }
@@ -147,6 +143,13 @@ public class SeamCarver {
                     continue;
                 }
 
+                // deal with special case: only one line of pixel:
+                if (columns == 1) {
+                    distTo[j] = prevDistTo[j] + energyMatrix[i][j];
+                    parent[i][j] = j;
+                    continue;
+                }
+
                 // only two prev pixel - left border or right border.
                 int theOther = -1;
                 if (j == 0) {
@@ -204,11 +207,25 @@ public class SeamCarver {
         return seam;
     }
 
+    // invalid seams:
+    // distance between adj pixel greater than 1
+
+    // remove vertical seam from current picture
+    public void removeVerticalSeam(int[] seam) {
+        checkSeam(seam, true);
+
+        for (int i = 0; i < height; i++) {
+            System.arraycopy(colorsMatrix[i], seam[i] + 1, colorsMatrix[i], seam[i], width - seam[i] - 1);
+        }
+        width--;
+
+        getEnergyMatrix();
+    }
+
     // remove horizontal seam from current picture
     public void removeHorizontalSeam(int[] seam) {
-        if (seam == null || seam.length != width) {
-            throw new java.lang.IllegalArgumentException();
-        }
+        checkSeam(seam, false);
+
         for (int col = 0; col < width; col++) {
             for (int row = seam[col]; row < height - 1; row++) {
                 colorsMatrix[row][col] = colorsMatrix[row + 1][col];
@@ -217,25 +234,48 @@ public class SeamCarver {
         height--;
 
         getEnergyMatrix();
-        isPicObsolete = true;
     }
 
-    // remove vertical seam from current picture
-    public void removeVerticalSeam(int[] seam) {
-        if (seam == null || seam.length != height) {
+    private void checkSeam(int[] seam, boolean isVertical) {
+        if (seam == null) {
             throw new java.lang.IllegalArgumentException();
         }
-        for (int i = 0; i < height; i++) {
-            System.arraycopy(colorsMatrix[i], seam[i] + 1, colorsMatrix[i], seam[i], width - seam[i] - 1);
+
+        // width of the picture is less than or equal to 1
+        if (isVertical && (seam.length != height || width <= 1)) {
+            throw new java.lang.IllegalArgumentException();
         }
-        width--;
+        // height of the picture is less than or equal to 1
+        if (!isVertical && (seam.length != width || height <= 1)) {
+            throw new java.lang.IllegalArgumentException();
+        }
 
-        getEnergyMatrix();
-        isPicObsolete = true;
-    }
+        boolean shouldThrow = false;
+        for (int i = 0; i < seam.length; i++) {
+            // entry outside prescribed range
+            if (isVertical) {
+                if (seam[i] < 0 || seam[i] >= width) {
+                    shouldThrow = true;
+                    break;
+                }
+            } else {
+                if (seam[i] < 0 || seam[i] >= height) {
+                    shouldThrow = true;
+                    break;
+                }
+            }
 
-    public static void main(String[] args) {
-        Picture picture = new Picture("./seam/6x5.png");
+            // adjacent entries differ by more than 1
+            if (i > 0) {
+                if (Math.abs(seam[i] - seam[i - 1]) > 1) {
+                    shouldThrow = true;
+                    break;
+                }
+            }
+        }
 
+        if (shouldThrow) {
+            throw new java.lang.IllegalArgumentException();
+        }
     }
 }
